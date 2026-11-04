@@ -1,0 +1,54 @@
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Daftar Penulis</h2>
+            <a href="{{ route('authors.create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">+ Tambah Penulis</a>
+        </div>
+    </x-slot>
+
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            @include('components.alerts')
+
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900 overflow-x-auto">
+                    <table class="min-w-full border border-gray-200">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 uppercase text-sm">
+                                <th class="py-3 px-6 text-left">Nama</th>
+                                <th class="py-3 px-6 text-left">Email</th>
+                                <th class="py-3 px-6 text-center">Jumlah Buku</th>
+                                <th class="py-3 px-6 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-600 text-sm">
+                            @forelse ($authors as $author)
+                                <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                    <td class="py-3 px-6">{{ $author->nama }}</td>
+                                    <td class="py-3 px-6">{{ $author->email }}</td>
+                                    <td class="py-3 px-6 text-center">{{ $author->books_count }}</td>
+                                    <td class="py-3 px-6">
+                                        <div class="flex items-center justify-center" style="gap: 12px;">
+                                            <a href="{{ route('authors.edit', $author) }}" class="text-blue-500 font-semibold">Edit</a>
+                                            <form action="{{ route('authors.destroy', $author) }}" method="POST" onsubmit="return confirm('Hapus penulis ini?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-500 font-semibold">Hapus</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="py-4 px-6 text-center text-gray-500">Belum ada data penulis.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+
+                    <div class="mt-4">{{ $authors->links() }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</x-app-layout>
