@@ -1,33 +1,64 @@
 <?php
-
 namespace App\Modules\Products\Models;
 
-use App\Modules\Products\Exceptions\InsufficientStockException;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Modules\Products\Exceptions\InsufficientStockException;
 
 class Product extends Model
 {
-    use HasFactory;
-
+    use HasFactory, SoftDeletes;
+ 
     protected $fillable = [
-        'name',
-        'slug',
-        'price',
-        'stock',
-        'description',
+        'name', 'slug', 'description', 'price',
+        'stock', 'low_stock_threshold', 'is_active'
     ];
-
+ 
     protected $casts = [
         'price' => 'decimal:2',
+        'is_active' => 'boolean',
     ];
-
-    public function decreaseStock(int $qty): void
+ 
+    public function categories(): BelongsToMany
     {
-        if ($qty > $this->stock) {
-            throw new InsufficientStockException($this->name, $this->stock, $qty);
-        }
+        return $this->belongsToMany(Category::class)
+            ->withPivot('added_at')
+            ->withTimestamps();
+    }
+    
+    public function scopeAvailable(Builder $query): Builder
+    {
+        return $query->where('stock', '>', 0)->where('is_active', true);
+    }
+ 
+    public function scopePriceBelow(Builder $query, float $price): Builder
+    {
+        return $query->where('price', '<=', $price);
+    }
+ 
+    public function scopeSearch(Builder $query, string $keyword): Builder
+    {
+        return $query->where(function ($q) use ($keyword) {
+            $q->where('name', 'like', "%{$keyword}%")
+            ->orWhere('description', 'like', "%{$keyword}%");
+        });
+    }
+ 
+    public function scopeLowStock(Builder $query): Builder
+    {
+        return $query->whereColumn('stock', '<=', 'low_stock_threshold');
+    }
+ 
+    public function isInStock(int $quantity = 1): bool
+    {
+        return $this->stock >= $quantity;
+    }
 
-        $this->decrement('stock', $qty);
+    protected static function newFactory()
+    {
+    return \Database\Factories\ProductFactory::new();
     }
 }
